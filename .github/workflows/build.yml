@@ -1,8 +1,6 @@
 name: Build APK - MyAccountBook
 
 on:
-  push:
-    branches: [ main, master ]
   workflow_dispatch:
 
 jobs:
@@ -11,20 +9,43 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-      - name: Build APK (kivy/buildozer Docker)
+      - name: Install Android SDK manually
         run: |
-          # Detect project directory
-          if [ -d "${{ github.workspace }}/MyAccountBook" ]; then
-            PROJ="MyAccountBook"
-          else
-            PROJ="."
-          fi
-          docker run --rm \
-            -v "${{ github.workspace }}/$PROJ:/workspace" \
-            -w /workspace \
-            kivy/buildozer:latest \
-            buildozer android debug 2>&1
+          sudo apt update
+          sudo apt install -y unzip wget openjdk-17-jdk
+
+          # Download command-line tools
+          cd /tmp
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q commandlinetools-linux-*.zip
+          mkdir -p $HOME/android/cmdline-tools
+          mv cmdline-tools $HOME/android/cmdline-tools/latest
+
+          # Accept licenses and install SDK platform & build-tools
+          yes | $HOME/android/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/android --licenses 2>/dev/null
+          $HOME/android/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/android \
+            "platforms;android-34" "build-tools;34.0.0" "ndk;27.0.12077973"
+
+          # Set env
+          echo "ANDROID_HOME=$HOME/android" >> $GITHUB_ENV
+          echo "$HOME/android/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "$HOME/android/platform-tools" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install Buildozer
+        run: |
+          pip install --user buildozer "cython<3.0.0"
+
+      - name: Build APK
+        timeout-minutes: 120
+        run: |
+          if [ -d "MyAccountBook" ]; then cd MyAccountBook; fi
+          echo "Building APK in: $(pwd)"
+          buildozer android debug 2>&1
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
