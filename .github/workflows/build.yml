@@ -21,11 +21,9 @@ jobs:
       - name: Install Android cmdline-tools
         run: |
           cd /tmp
-          # Try multiple download URLs (any one works)
           curl -sL "https://dl.google.com/android/repository/commandlinetools-linux-latest.zip" -o cmdline-tools.zip || \
           wget -q "https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip" -O cmdline-tools.zip || \
           wget -q "https://dl.google.com/android/repository/commandlinetools-linux-10406996_latest.zip" -O cmdline-tools.zip
-          ls -la cmdline-tools.zip
           unzip -q cmdline-tools.zip
           mkdir -p $HOME/android/cmdline-tools
           mv cmdline-tools $HOME/android/cmdline-tools/latest
@@ -36,10 +34,7 @@ jobs:
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME --licenses
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME \
             "platforms;android-34" "build-tools;34.0.0" "ndk;27.0.12077973"
-          # Verify aidl exists
           find $ANDROID_HOME -name "aidl*" -type f 2>/dev/null
-          echo "AIDL check: $(find $ANDROID_HOME -name aidl -type f 2>/dev/null | head -1)"
-          echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
 
       - name: Install Buildozer
         run: |
