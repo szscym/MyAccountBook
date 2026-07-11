@@ -12,29 +12,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install system dependencies
+      - name: Build APK (kivy/buildozer Docker)
         run: |
-          sudo apt update
-          sudo apt install -y git zip unzip python3-pip \
-            openjdk-17-jdk libffi-dev libssl-dev libltdl-dev \
-            libncurses5 libtinfo5 ccache
-
-      - name: Install Buildozer & Cython
-        run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install buildozer "cython<3.0.0"
-
-      - name: Build APK (30-60 min)
-        timeout-minutes: 120
-        run: |
-          if [ -d "MyAccountBook" ]; then cd MyAccountBook; fi
-          echo "Building APK in: $(pwd)"
-          buildozer android debug 2>&1
+          # Detect project directory
+          if [ -d "${{ github.workspace }}/MyAccountBook" ]; then
+            PROJ="MyAccountBook"
+          else
+            PROJ="."
+          fi
+          docker run --rm \
+            -v "${{ github.workspace }}/$PROJ:/workspace" \
+            -w /workspace \
+            kivy/buildozer:latest \
+            buildozer android debug 2>&1
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
