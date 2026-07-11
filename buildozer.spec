@@ -11,7 +11,6 @@ orientation = portrait
 fullscreen = 0
 icon = icon-512.png
 presplash_color = #2E7D32
-android.permissions = INTERNET
 android.api = 34
 android.minapi = 21
 android.sdk = 34

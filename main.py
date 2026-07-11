@@ -19,11 +19,23 @@ from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.widget import Widget
 from kivy.clock import Clock
 from kivy.metrics import dp
+import platform
+import os
 
-FONT = 'C:/Windows/Fonts/simhei.ttf'
-
-# Register Chinese font as the default 'Roboto' so ALL widgets use it
+# --- Platform-aware font setup ---
+if platform.system() == 'Windows':
+    FONT = 'C:/Windows/Fonts/simhei.ttf'
+else:
+    _CJK = ['/system/fonts/NotoSansCJK-Regular.ttc',
+            '/system/fonts/NotoSansSC-Regular.otf',
+            '/system/fonts/DroidSansFallback.ttf']
+    FONT = 'Roboto'
+    for _p in _CJK:
+        if os.path.exists(_p):
+            FONT = _p
+            break
 LabelBase.register(name='Roboto', fn_regular=FONT)
+# ---
 
 GREEN = (0.18, 0.49, 0.20, 1)
 GREEN_LT = (0.26, 0.63, 0.28, 1)
