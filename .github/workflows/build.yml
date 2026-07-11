@@ -29,23 +29,31 @@ jobs:
           mv cmdline-tools $HOME/android/cmdline-tools/latest
           echo "ANDROID_HOME=$HOME/android" >> $GITHUB_ENV
 
-      - name: Install SDK platform, build-tools & NDK
+      - name: Install SDK & NDK
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME --licenses
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME \
             "platforms;android-34" "build-tools;34.0.0" "ndk;27.0.12077973"
-          find $ANDROID_HOME -name "aidl*" -type f 2>/dev/null
 
       - name: Install Buildozer
         run: |
           pip install --user buildozer "cython<3.0.0"
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
+      - name: Create 4GB swap (prevent OOM kill)
+        run: |
+          sudo fallocate -l 4G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          free -h
+
       - name: Build APK
-        timeout-minutes: 120
+        timeout-minutes: 180
+        env:
+          P4A_JOBS: 2
         run: |
           if [ -d "MyAccountBook" ]; then cd MyAccountBook; fi
-          echo "Building in: $(pwd)"
           yes | buildozer android debug 2>&1
 
       - name: Upload APK
