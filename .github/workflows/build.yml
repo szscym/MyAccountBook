@@ -1,7 +1,9 @@
-name: Build APK
+name: Build APK - MyAccountBook
 
 on:
   push:
+    branches: [ main, master ]
+  pull_request:
     branches: [ main, master ]
   workflow_dispatch:
 
@@ -15,24 +17,50 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.11'
 
-      - name: Install Buildozer & system deps
+      - name: Install system deps
         run: |
-          pip install --upgrade buildozer cython
           sudo apt update
           sudo apt install -y git zip unzip openjdk-17-jdk \
-            libffi-dev libssl-dev libltdl-dev
+            libffi-dev libssl-dev libltdl-dev \
+            libncurses5 libncurses5-dev libtinfo5 \
+            autoconf automake libtool pkg-config ccache
+
+      - name: Install Buildozer
+        run: |
+          pip install buildozer
+          pip install "cython<3.0.0"
+
+      - name: Set up Android SDK 34
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android NDK & build-tools
+        run: |
+          yes | sdkmanager "platforms;android-34" "build-tools;34.0.0" "ndk;27.0.12077973" 2>/dev/null
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> $GITHUB_ENV
+
+      - name: Configure Buildozer to skip SDK download
+        run: |
+          mkdir -p ~/.buildozer/android/platform
+          ln -s $ANDROID_HOME ~/.buildozer/android/platform/android-sdk 2>/dev/null || true
+          ln -s $ANDROID_NDK_HOME ~/.buildozer/android/platform/android-ndk-r27 2>/dev/null || true
 
       - name: Build APK
         run: |
-          DIR="."
-          [ -d "MyAccountBook" ] && DIR="MyAccountBook"
-          cd "$DIR"
-          buildozer android debug
+          # Find project directory
+          if [ -d "MyAccountBook" ]; then
+            cd MyAccountBook
+          fi
+          echo "Building APK in: $(pwd)"
+          buildozer android debug 2>&1 | tail -20
+          echo "--- Checking for APK ---"
+          find . -name "*.apk" 2>/dev/null
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: myaccountbook-apk
           path: "**/bin/*.apk"
+          retention-days: 7
