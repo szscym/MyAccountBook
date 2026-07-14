@@ -1,0 +1,28 @@
+﻿# Flutter
+.dart_tool/
+.packages
+build/
+*.iml
+.idea/
+.metadata
+
+# Android
+android/app/build/
+android/.gradle/
+android/local.properties
+android/key.properties
+
+# iOS
+ios/Pods/
+ios/.symlinks/
+
+# flutter-sdk (huge, separate download)
+flutter-sdk/
+
+# Partial downloads
+android-sdk.zip
+android-cmdline-tools.zip
+
+# OS
+.DS_Store
+Thumbs.db
