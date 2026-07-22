@@ -21,12 +21,18 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   String _category = '';
   DateTime _date = DateTime.now();
   bool _saving = false;
+  List<String> _categories = [];
 
   bool get _isEditing => widget.transaction != null;
 
   @override
   void initState() {
     super.initState();
+    _loadCategories();
+  }
+
+  Future<void> _loadCategories() async {
+    final cats = await Categories.getItems(_type);
     if (_isEditing) {
       final tx = widget.transaction!;
       _type = tx.type;
@@ -34,9 +40,24 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       _date = tx.date;
       _amountController.text = tx.amount.toString();
       _noteController.text = tx.note ?? '';
+      // Reload for the correct type
+      final catsForType = await Categories.getItems(_type);
+      setState(() => _categories = catsForType);
     } else {
-      _category = Categories.items[_type]!.first;
+      setState(() {
+        _categories = cats;
+        _category = cats.first;
+      });
     }
+  }
+
+  Future<void> _switchType(TransactionType newType) async {
+    final cats = await Categories.getItems(newType);
+    setState(() {
+      _type = newType;
+      _categories = cats;
+      _category = cats.first;
+    });
   }
 
   @override
@@ -46,10 +67,41 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     super.dispose();
   }
 
+  Future<void> _addCustomCategory() async {
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(_type == TransactionType.income ? '添加收入分类' : '添加支出分类'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: '输入新分类名称',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('添加'),
+          ),
+        ],
+      ),
+    );
+    if (result != null && result.isNotEmpty && !_categories.contains(result)) {
+      final cats = await Categories.addCustom(_type, result);
+      setState(() {
+        _categories = cats;
+        _category = result;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final categories = Categories.items[_type]!;
 
     return Scaffold(
       appBar: AppBar(
@@ -84,10 +136,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               ],
               selected: {_type},
               onSelectionChanged: (set) {
-                setState(() {
-                  _type = set.first;
-                  _category = Categories.items[_type]!.first;
-                });
+                _switchType(set.first);
               },
               style: ButtonStyle(
                 backgroundColor: WidgetStateProperty.resolveWith((states) {
@@ -122,26 +171,34 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             const SizedBox(height: 20),
 
             // Category picker
-            Text(
-              '分类',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '分类',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: _addCustomCategory,
+                  icon: const Icon(Icons.add, size: 16),
+                  label: const Text('自定义', style: TextStyle(fontSize: 12)),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: categories.map((cat) {
+              children: _categories.map((cat) {
                 final selected = _category == cat;
+                final isCustom = !Categories.isDefault(cat);
                 return ChoiceChip(
                   label: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Categories.iconFor(cat),
-                        size: 18,
-                      ),
+                      Icon(Categories.iconFor(cat), size: 18),
                       const SizedBox(width: 4),
                       Text(cat),
                     ],
@@ -150,6 +207,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   onSelected: (v) {
                     if (v) setState(() => _category = cat);
                   },
+                  // Show custom categories with a subtle border
+                  side: isCustom
+                      ? BorderSide(color: Colors.orange.shade300, width: 1)
+                      : null,
                 );
               }).toList(),
             ),

@@ -7,10 +7,12 @@ import '../models/transaction.dart';
 class StatisticsScreen extends StatefulWidget {
   const StatisticsScreen({super.key});
   @override
-  State<StatisticsScreen> createState() => _StatisticsScreenState();
+  State<StatisticsScreen> createState() => StatisticsScreenState();
 }
 
-class _StatisticsScreenState extends State<StatisticsScreen> {
+class StatisticsScreenState extends State<StatisticsScreen> {
+  /// Public method so parent can trigger refresh
+  void refresh() => _loadData();
   final db = DatabaseHelper.instance;
   DateTime _selectedMonth = DateTime.now();
   double _income = 0;
