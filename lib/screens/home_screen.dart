@@ -6,6 +6,7 @@ import '../models/transaction.dart';
 import 'add_transaction_screen.dart';
 import 'transactions_screen.dart';
 import 'statistics_screen.dart';
+import 'about_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,6 +25,19 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Money Minder'),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.qr_code),
+            tooltip: '下载App',
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutScreen()));
+            },
+          ),
+        ],
+      ),
       body: IndexedStack(
         index: _currentIndex,
         children: [
@@ -171,7 +185,7 @@ class _OverviewTabState extends State<_OverviewTab> {
       child: RefreshIndicator(
         onRefresh: _loadData,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 24, 16, 100),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
